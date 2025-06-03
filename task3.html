@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tic-Tac-Toe Game</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #6dd5fa, #2980b9);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #fff;
+    }
+
+    .container {
+      background-color: rgba(255, 255, 255, 0.1);
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+      text-align: center;
+      backdrop-filter: blur(10px);
+    }
+
+    h1 {
+      font-size: 2.8rem;
+      margin-bottom: 20px;
+    }
+
+    .mode-select {
+      margin-bottom: 15px;
+    }
+
+    select {
+      padding: 8px 12px;
+      border-radius: 5px;
+      border: none;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-gap: 10px;
+      margin: 20px 0;
+      justify-content: center;
+    }
+
+    .cell {
+      width: 100px;
+      height: 100px;
+      background-color: rgba(255, 255, 255, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: #333;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform 0.2s ease, background 0.3s ease;
+    }
+
+    .cell:hover {
+      background-color: #e3f2fd;
+      transform: scale(1.05);
+    }
+
+    .game-info {
+      margin-top: 10px;
+      font-size: 1.2rem;
+    }
+
+    #status {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    .winner {
+      color: #2ecc71;
+    }
+
+    .tie {
+      color: #f39c12;
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      background-color: #34495e;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #2c3e50;
+    }
+
+    @media screen and (max-width: 400px) {
+      .board {
+        grid-template-columns: repeat(3, 80px);
+        grid-gap: 8px;
+      }
+      .cell {
+        width: 80px;
+        height: 80px;
+        font-size: 2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Tic-Tac-Toe</h1>
+    <div class="mode-select">
+      <label for="mode">Game Mode:</label>
+      <select id="mode">
+        <option value="pvp">Player vs Player</option>
+        <option value="ai">Player vs AI</option>
+      </select>
+    </div>
+    <div class="board" id="board">
+      <!-- 9 cells -->
+      <div class="cell" data-cell></div>
+      <div class="cell" data-cell></div>
+      <div class="cell" data-cell></div>
+      <div class="cell" data-cell></div>
+      <div class="cell" data-cell></div>
+      <div class="cell" data-cell></div>
+      <div class="cell" data-cell></div>
+      <div class="cell" data-cell></div>
+      <div class="cell" data-cell></div>
+    </div>
+    <div class="game-info">
+      <div id="status">Player X's Turn</div>
+      <button id="restartBtn">Restart Game</button>
+    </div>
+  </div>
+
+  <script>
+    const cells = document.querySelectorAll('[data-cell]');
+    const statusText = document.getElementById('status');
+    const restartBtn = document.getElementById('restartBtn');
+    const modeSelect = document.getElementById('mode');
+    let board = Array(9).fill('');
+    let currentPlayer = 'X';
+    let isGameActive = true;
+    let isAI = false;
+
+    const winningCombos = [
+      [0,1,2],[3,4,5],[6,7,8],
+      [0,3,6],[1,4,7],[2,5,8],
+      [0,4,8],[2,4,6]
+    ];
+
+    const checkWinner = () => {
+      for (const [a, b, c] of winningCombos) {
+        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+          statusText.className = 'winner';
+          statusText.textContent = `🎉 Player ${currentPlayer} Wins!`;
+          isGameActive = false;
+          return;
+        }
+      }
+
+      if (!board.includes('')) {
+        statusText.className = 'tie';
+        statusText.textContent = "It's a Tie!";
+        isGameActive = false;
+      }
+    };
+
+    const handleClick = (e) => {
+      const index = [...cells].indexOf(e.target);
+      if (!isGameActive || board[index]) return;
+
+      makeMove(index, currentPlayer);
+
+      if (isGameActive && isAI && currentPlayer === 'O') {
+        setTimeout(aiMove, 500);
+      }
+    };
+
+    const makeMove = (index, player) => {
+      board[index] = player;
+      cells[index].textContent = player;
+      checkWinner();
+      if (isGameActive) {
+        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        statusText.className = '';
+        statusText.textContent = `Player ${currentPlayer}'s Turn`;
+      }
+    };
+
+    const aiMove = () => {
+      const emptyIndices = board
+        .map((val, idx) => val === '' ? idx : null)
+        .filter(i => i !== null);
+
+      // Simple AI: random choice
+      const randomIndex = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+      makeMove(randomIndex, 'O');
+    };
+
+    const restartGame = () => {
+      board.fill('');
+      cells.forEach(cell => cell.textContent = '');
+      currentPlayer = 'X';
+      isGameActive = true;
+      statusText.className = '';
+      statusText.textContent = `Player ${currentPlayer}'s Turn`;
+    };
+
+    cells.forEach(cell => cell.addEventListener('click', handleClick));
+    restartBtn.addEventListener('click', restartGame);
+    modeSelect.addEventListener('change', () => {
+      isAI = modeSelect.value === 'ai';
+      restartGame();
+    });
+
+    // Initial mode setup
+    isAI = modeSelect.value === 'ai';
+  </script>
+</body>
+</html>
